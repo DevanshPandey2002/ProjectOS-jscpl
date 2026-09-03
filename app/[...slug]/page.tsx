@@ -9,7 +9,10 @@ import { MASTER_SCHEMES } from '@/lib/master';
 type Row={lot:string;schemeId:string;scheme:string;block:string;dpr:string;itemCode:string;description:string;unit:string;rate:number;approvedQty:number;executedQty:number;billedValue:number};
 const KEY='projectos-execution-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
-const rows:Row[]=[...LOT3,...LOT4] as Row[];
+// The imported workbook datasets are structurally compatible with Row, but their
+// literal inferred types differ because some source cells are nullable/readonly.
+// Convert through unknown so TypeScript does not reject the runtime-compatible data.
+const rows:Row[]=[...LOT3,...LOT4] as unknown as Row[];
 const masterValue=MASTER_SCHEMES.reduce((s,x)=>s+x.estimatedValue,0);
 const schemeCount=new Set(rows.map(r=>r.schemeId||r.scheme)).size;
 function Stat({label,value,sub}:{label:string;value:string;sub?:string}){return <div className='card'><div className='muted'>{label}</div><div className='kpi'>{value}</div>{sub&&<div className='muted' style={{fontSize:12,marginTop:5}}>{sub}</div>}</div>}
