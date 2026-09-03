@@ -1,1 +1,1 @@
-export const MASTER_SCHEMES = "+ss+" as const;
+export const MASTER_SCHEMES = "+open('/tmp/master.ts').read()+"
