@@ -1,1 +1,1 @@
-export const LOT4 = "+l4json+" as const;
+export const LOT4 = "+open('/tmp/lot4.ts').read()+"
