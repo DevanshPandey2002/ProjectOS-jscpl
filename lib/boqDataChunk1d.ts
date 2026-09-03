@@ -1,0 +1,1 @@
+export const BOQ_DATA_CHUNK_1D = 'ORzHwoA/OUPTJ9wMXk5Djt53E3DcKFWZfd0DL78b/Ek1qDn12Zehk+9/vyxQ6Sl/YPKaV2U1jWweSVRPibDDtN8fyj07YwlYPpIwTXlKx67e8LByqTpvi9kvlUlK7zSpafRCzcbE1aod+tEuw+icdO';
