@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 import {loadWorkspaceBoqData} from '@/lib/workspace';
 const EX='projectos-execution-v2',ME='projectos-measurements-v1',BILLS='projectos-ra-bills-v1';
@@ -27,6 +29,7 @@ export default function BillsPage(){
  const exportCsv=()=>{const data=[['RA Bill','Date', 'Lot','Scheme','Item Code','Description','Unit','Rate','Measured Qty','This Bill Qty','This Bill Value'],...eligible.map(r=>[bills[0]?.number||'Draft',new Date().toISOString().slice(0,10),r.lot,r.schemeName,r.itemCode,r.itemDescription.replace(/\n/g,' '),r.unit,r.rate??'',measured(r),currentQty(r),amount(r,currentQty(r))])];const csv=data.map(a=>a.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='ProjectOS_RA_Bill.csv';a.click()};
  if(loading)return <Shell><div className='content'><h1 className='title'>RA Bills</h1><p className='muted'>Loading measured quantities…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>RA Bills error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const gross=totals.value, cgst=gross*.09,sgst=gross*.09,total=gross+cgst+sgst;
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>RA Bill Preparation</h1><p className='muted'>Prepare bills only from measured quantities. Previous, current and cumulative billing remain separate from the approved BOQ.</p></div><div style={{display:'flex',gap:8}}><Link className='btn secondary' href='/measurements'>Measurements</Link><button className='btn' onClick={exportCsv}>Export Draft CSV</button></div></div>
  <div className='grid grid4' style={{marginTop:18}}><div className='card'><div className='muted'>Measured quantity available</div><div className='kpi'>{qty(totals.measured)}</div></div><div className='card'><div className='muted'>This bill quantity</div><div className='kpi'>{qty(totals.current)}</div></div><div className='card'><div className='muted'>Gross bill value</div><div className='kpi'>{money(gross)}</div></div><div className='card'><div className='muted'>Grand total incl. GST</div><div className='kpi'>{money(total)}</div></div></div>
