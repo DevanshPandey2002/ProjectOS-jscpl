@@ -1,6 +1,8 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace,loadWorkspaceBoqData} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -10,7 +12,7 @@ type Scheme={key:string;lot:string;id:string|null;name:string;block:string;dpr:s
 export default function SchemesPage(){
  const [rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[scheme,setScheme]=useState('All Schemes'),[item,setItem]=useState(''),[selected,setSelected]=useState<string|null>(null);
- useEffect(()=>{let live=true;(async()=>{try{const raw=await loadBoqData();let ex:Record<string,number>={};try{ex=JSON.parse(localStorage.getItem('projectos-execution-v2')||'{}')}catch{};const out=raw.map(r=>{const k=[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');return {...r,executedQty:Math.min(r.approvedQty,Math.max(0,Number(ex[k]||0))),_key:k}});if(live)setRows(out)}catch(e){if(live)setError(e instanceof Error?e.message:'Unable to load BOQ')}finally{if(live)setLoading(false)}})();return()=>{live=false}},[]);
+ useEffect(()=>{let live=true;(async()=>{try{const raw=await loadWorkspaceBoqData(loadBoqData);let ex:Record<string,number>={};try{ex=JSON.parse(localStorage.getItem('projectos-execution-v2')||'{}')}catch{};const out=raw.map(r=>{const k=[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');return {...r,executedQty:Math.min(r.approvedQty,Math.max(0,Number(ex[k]||0))),_key:k}});if(live)setRows(out)}catch(e){if(live)setError(e instanceof Error?e.message:'Unable to load BOQ')}finally{if(live)setLoading(false)}})();return()=>{live=false}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const schemeOptions=useMemo(()=>Array.from(new Set(rows.filter(r=>(lot==='All Lots'||r.lot===lot)&&(block==='All Blocks'||r.block===block)).map(r=>r.schemeName))).sort(),[rows,lot,block]);
@@ -22,6 +24,7 @@ export default function SchemesPage(){
  const exportScheme=()=>{if(!current)return;const head=['Lot','Scheme ID','Scheme','Block','Item Code','Description','Unit','Rate','Approved Qty','Consumed Qty','Remaining Qty','Approved Value','Consumed Value','Remaining Value'];const body=currentItems.map(r=>{const rem=Math.max(0,r.approvedQty-r.executedQty);return [r.lot,r.schemeId||'',r.schemeName,r.block,r.itemCode,r.itemDescription.replace(/\n/g,' '),r.unit,r.rate??'',r.approvedQty,r.executedQty,rem,typeof r.rate==='number'?value(r):'',typeof r.rate==='number'?r.executedQty*r.rate:'',typeof r.rate==='number'?rem*r.rate:'']});const csv=[head,...body].map(a=>a.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(current.name.replace(/[^a-z0-9]+/gi,'_')||'scheme')+'_consumption.csv';a.click();URL.revokeObjectURL(a.href)};
  if(loading)return <Shell><div className='content'><h1 className='title'>Schemes</h1><p className='muted'>Loading scheme, quantity and consumption data…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Schemes</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  return <Shell><div className='content'>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Scheme Register & Consumption</h1><p className='muted'>Master/approved quantity → consumed/executed quantity → remaining balance.</p></div><span className='badge'>{schemes.length.toLocaleString('en-IN')} schemes</span></div>
   <div className='card' style={{marginTop:16}}><h3>Filters</h3><div className='toolbar' style={{display:'grid',gridTemplateColumns:'160px 190px 1fr 1.5fr',gap:10,marginTop:10}}><select className='input' value={lot} onChange={e=>{setLot(e.target.value);setBlock('All Blocks');setScheme('All Schemes');setSelected(null)}}><option>All Lots</option>{lots.map(x=><option key={x}>{x}</option>)}</select><select className='input' value={block} onChange={e=>{setBlock(e.target.value);setScheme('All Schemes');setSelected(null)}}><option>All Blocks</option>{blocks.map(x=><option key={x}>{x}</option>)}</select><select className='input' value={scheme} onChange={e=>{setScheme(e.target.value);setSelected(null)}}><option>All Schemes</option>{schemeOptions.map(x=><option key={x}>{x}</option>)}</select><input className='input' placeholder='Filter by item name, item code, unit, category or part…' value={item} onChange={e=>setItem(e.target.value)}/></div></div>
