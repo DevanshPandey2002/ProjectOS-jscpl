@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace,loadWorkspaceBoqData} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
@@ -13,7 +15,7 @@ function Bar({pct}:{pct:number}){return <div style={{height:10,background:'#e5e7
 export default function LotsPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[search,setSearch]=useState('');
- useEffect(()=>{loadBoqData().then(setRows).catch(e=>setError(e instanceof Error?e.message:'Unable to load BOQ')).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{loadWorkspaceBoqData(loadBoqData).then(setRows).catch(e=>setError(e instanceof Error?e.message:'Unable to load BOQ')).finally(()=>setLoading(false))},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const lotGroups=useMemo<Group[]>(()=>lots.map(name=>{const a=rows.filter(r=>r.lot===name);return{name,items:a.length,schemes:new Set(a.map(r=>r.schemeName)).size,value:a.reduce((s,r)=>s+value(r),0),qty:a.reduce((s,r)=>s+r.approvedQty,0)}}),[rows,lots]);
@@ -24,6 +26,7 @@ export default function LotsPage(){
  const selectedValue=selectedRows.reduce((s,r)=>s+value(r),0),selectedSchemes=new Set(selectedRows.map(r=>r.schemeName)).size;
  if(loading)return <Shell><div className='content'><h1 className='title'>Lots & Blocks</h1><p className='muted'>Loading Lot 3 and Lot 4 structure…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Lots & Blocks</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const maxLot=Math.max(...lotGroups.map(x=>x.value),1),maxBlock=Math.max(...blockGroups.map(x=>x.value),1);
  return <Shell><div className='content'>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Lots & Blocks Control</h1><p className='muted'>Execution segmentation of the approved project BOQ. Select a Lot, then a Block, then drill into its schemes.</p></div><Link className='btn' href='/schemes'>Open Scheme Register</Link></div>
