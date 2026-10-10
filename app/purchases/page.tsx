@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-purchases-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -12,7 +13,7 @@ export default function PurchasesPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[purchases,setPurchases]=useState<Purchase[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[q,setQ]=useState('');
  const [form,setForm]=useState({row:'',vendor:'',qty:'',rate:'',status:'Draft' as Purchase['status']});
- useEffect(()=>{try{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,p])=>{setRows(r);setPurchases(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load purchases')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load purchases');setLoading(false)}},[]);
+ useEffect(()=>{try{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,p])=>{setRows(r);setPurchases(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load purchases')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load purchases');setLoading(false)}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const items=useMemo(()=>rows.filter(r=>(lot==='All Lots'||r.lot===lot)&&(block==='All Blocks'||r.block===block)&&(!q||Object.values(r).join(' ').toLowerCase().includes(q.toLowerCase()))),[rows,lot,block,q]);
