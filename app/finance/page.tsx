@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace,loadWorkspaceBoqData} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 const EXP='projectos-expenses-v1',PAY='projectos-payments-v1',BILL='projectos-ra-bills-v1',EXEC='projectos-execution-v2';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
@@ -15,7 +17,7 @@ const card={background:'#fff',border:'1px solid #e5e7eb',borderRadius:14,padding
 function Bar({value,max=100}:{value:number;max?:number}){return <div style={{height:9,background:'#eef2f7',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${Math.max(0,Math.min(100,value/max*100))}%`,background:'#2563eb',borderRadius:99}}/></div>}
 export default function FinancePage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[expenses,setExpenses]=useState<Expense[]>([]),[bills,setBills]=useState<Bill[]>([]),[payments,setPayments]=useState<Payment[]>([]),[exec,setExec]=useState<Exec>({}),[loading,setLoading]=useState(true),[error,setError]=useState(''),[lot,setLot]=useState('All Lots');
- useEffect(()=>{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(EXP)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(BILL)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(PAY)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(EXEC)||'{}'))]).then(([r,e,b,p,x])=>{setRows(r);setExpenses(e);setBills(b);setPayments(p);setExec(x)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load project finance')).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(EXP)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(BILL)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(PAY)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(EXEC)||'{}'))]).then(([r,e,b,p,x])=>{setRows(r);setExpenses(e);setBills(b);setPayments(p);setExec(x)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load project finance')).finally(()=>setLoading(false))},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const data=useMemo(()=>rows.filter(r=>lot==='All Lots'||r.lot===lot),[rows,lot]);
  const approved=data.reduce((s,r)=>s+(typeof r.rate==='number'?r.rate*r.approvedQty:0),0);
@@ -29,6 +31,7 @@ export default function FinancePage(){
  const maxLot=Math.max(1,...lotStats.map(s=>s.a));
  if(loading)return <Shell><div className='content'><h1 className='title'>Project Finance</h1><p className='muted'>Loading integrated financial position…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Project Finance</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  return <Shell><div className='content'>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:20,flexWrap:'wrap'}}><div><div className='muted' style={{fontSize:12,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase'}}>Financial Control</div><h1 className='title' style={{marginBottom:5}}>Project Finance</h1><p className='muted'>A single view of approved value, execution, billing, collections and actual cost.</p></div><div className='toolbar'><select className='input' value={lot} onChange={e=>setLot(e.target.value)}><option>All Lots</option>{lots.map(l=><option key={l}>{l}</option>)}</select><Link className='btn secondary' href='/reports'>Reports</Link></div></div>
   <div className='grid grid4' style={{marginTop:20}}>{[['Approved Value',approved,'Baseline'],['Executed Value',executed,pct(approved?executed/approved*100:0)+' progress'],['Billed Value',billed,money(receivable)+' receivable'],['Actual Cost',costs,money(paid)+' paid']].map(([label,value,note])=><div key={String(label)} style={card}><div className='muted' style={{fontSize:13}}>{label}</div><div className='kpi' style={{fontSize:26,margin:'7px 0'}}>{money(Number(value))}</div><div className='muted' style={{fontSize:12}}>{note}</div></div>)}</div>

@@ -2,7 +2,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-execution-v2';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -11,7 +14,7 @@ const amount=(r:BoqRow,q:number)=>effectiveRate(r)*q;
 export default function ExecutionPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[ex,setEx]=useState<Record<string,number>>({}),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[scheme,setScheme]=useState('All Schemes'),[search,setSearch]=useState('');
- useEffect(()=>{Promise.all([loadBoqData(),Promise.resolve(typeof window==='undefined'?{}:JSON.parse(localStorage.getItem(KEY)||'{}'))]).then(([r,e])=>{setRows(r);setEx(e)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load execution data')).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(typeof window==='undefined'?{}:JSON.parse(localStorage.getItem(KEY)||'{}'))]).then(([r,e])=>{setRows(r);setEx(e)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load execution data')).finally(()=>setLoading(false))},[]);
  const key=(r:BoqRow)=>[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');
  const executed=(r:BoqRow)=>Math.min(r.approvedQty,Math.max(0,Number(ex[key(r)]||0)));
  const executionPct=(r:BoqRow)=>r.approvedQty?executed(r)/r.approvedQty*100:0;
@@ -24,6 +27,7 @@ export default function ExecutionPage(){
  const save=(r:BoqRow,s:string)=>{const next={...ex,[key(r)]:Math.min(r.approvedQty,Math.max(0,Number(s)||0))};setEx(next);localStorage.setItem(KEY,JSON.stringify(next))};
  if(loading)return <Shell><div className='content'><h1 className='title'>Execution</h1><p className='muted'>Loading approved BOQ and execution register…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Execution error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const pct=totals.approvedValue?totals.executedValue/totals.approvedValue*100:0;
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Execution Control</h1><p className='muted'>Record actual site execution against approved BOQ quantities. Execution shows how much work is physically completed; billing is controlled later through measurement and RA Bills.</p></div><Link className='btn secondary' href='/measurements'>Continue to Measurements</Link></div>
  <div className='grid grid4' style={{marginTop:18}}><div className='card'><div className='muted'>Approved value</div><div className='kpi'>{money(totals.approvedValue)}</div></div><div className='card'><div className='muted'>Executed value</div><div className='kpi'>{money(totals.executedValue)}</div></div><div className='card'><div className='muted'>Balance value</div><div className='kpi'>{money(totals.approvedValue-totals.executedValue)}</div></div><div className='card'><div className='muted'>Execution progress</div><div className='kpi'>{pct.toFixed(1)}%</div><div className='muted' style={{fontSize:12}}>Value-based portfolio progress</div></div></div>

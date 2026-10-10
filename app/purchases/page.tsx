@@ -2,7 +2,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-purchases-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -12,7 +15,7 @@ export default function PurchasesPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[purchases,setPurchases]=useState<Purchase[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[q,setQ]=useState('');
  const [form,setForm]=useState({row:'',vendor:'',qty:'',rate:'',status:'Draft' as Purchase['status']});
- useEffect(()=>{try{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,p])=>{setRows(r);setPurchases(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load purchases')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load purchases');setLoading(false)}},[]);
+ useEffect(()=>{try{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,p])=>{setRows(r);setPurchases(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load purchases')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load purchases');setLoading(false)}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const items=useMemo(()=>rows.filter(r=>(lot==='All Lots'||r.lot===lot)&&(block==='All Blocks'||r.block===block)&&(!q||Object.values(r).join(' ').toLowerCase().includes(q.toLowerCase()))),[rows,lot,block,q]);
@@ -21,6 +24,7 @@ export default function PurchasesPage(){
  const add=()=>{const r=rows.find(x=>k(x)===form.row);if(!r||!form.vendor)return;const p:Purchase={id:crypto.randomUUID(),date:new Date().toISOString().slice(0,10),lot:r.lot,block:r.block,scheme:r.schemeName,item:k(r),vendor:form.vendor,qty:Math.max(0,Number(form.qty)||0),rate:Math.max(0,Number(form.rate)||0),status:form.status};const next=[p,...purchases];setPurchases(next);localStorage.setItem(KEY,JSON.stringify(next));setForm({row:'',vendor:'',qty:'',rate:'',status:'Draft'})};
  if(loading)return <Shell><div className='content'><h1 className='title'>Purchases</h1><p className='muted'>Loading BOQ and procurement register…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Purchases error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Purchases & Materials</h1><p className='muted'>Track procurement against the same Lot → Block → Scheme → Item structure used by the BOQ.</p></div><Link className='btn secondary' href='/expenses'>Open Expenses</Link></div>
  <div className='grid grid4' style={{marginTop:18}}><div className='card'><div className='muted'>Purchase records</div><div className='kpi'>{purchases.length}</div></div><div className='card'><div className='muted'>Purchased quantity</div><div className='kpi'>{qty(totals.qty)}</div></div><div className='card'><div className='muted'>Received quantity</div><div className='kpi'>{qty(totals.received)}</div></div><div className='card'><div className='muted'>Purchase value</div><div className='kpi'>{money(totals.value)}</div></div></div>
  <div className='grid grid3' style={{marginTop:16}}><div className='card' style={{gridColumn:'span 2'}}><h3>New purchase entry</h3><div className='form'><label>BOQ item<select className='input' value={form.row} onChange={e=>setForm({...form,row:e.target.value})}><option value=''>Select item</option>{items.slice(0,1000).map(r=><option key={k(r)} value={k(r)}>{r.itemCode} · {r.schemeName} · {r.itemDescription.slice(0,70)}</option>)}</select></label><div className='grid grid3'><label>Vendor<input className='input' value={form.vendor} onChange={e=>setForm({...form,vendor:e.target.value})}/></label><label>Quantity<input className='input' type='number' min='0' step='any' value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})}/></label><label>Rate<input className='input' type='number' min='0' step='any' value={form.rate} onChange={e=>setForm({...form,rate:e.target.value})}/></label></div><label>Status<select className='input' value={form.status} onChange={e=>setForm({...form,status:e.target.value as Purchase['status']})}><option>Draft</option><option>Ordered</option><option>Received</option></select></label><button className='btn' onClick={add}>Add Purchase</button></div></div><div className='card'><h3>Procurement controls</h3><p className='muted'>Purchased and received quantities are tracked separately. This creates the foundation for material issue and consumption tracking.</p><p><b>Draft</b> → Ordered → Received → Issued → Executed</p></div></div>
