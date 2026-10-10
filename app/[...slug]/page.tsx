@@ -3,6 +3,7 @@ import {use,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 
 type Row=BoqRow&{executedQty:number};
 type ViewRow=Row&{_key:string};
@@ -15,7 +16,7 @@ export default function ModulePage({params}:{params:Promise<{slug?:string[]}>}){
  const {slug}=use(params),mod=slug?.join('/')||'dashboard';
  const [rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [q,setQ]=useState(''),[lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[scheme,setScheme]=useState('All Schemes'),[selectedLot,setSelectedLot]=useState('All Lots'),[selectedScheme,setSelectedScheme]=useState('All Schemes'),[executed,setExecuted]=useState<Record<string,number>>({}),[saved,setSaved]=useState<Record<string,number>>({});
- useEffect(()=>{let live=true;(async()=>{try{const raw=await loadBoqData();let ex:Record<string,number>={};try{ex=JSON.parse(localStorage.getItem(KEY)||'{}')}catch{};const out:ViewRow[]=raw.map(r=>{const k=[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');return {...r,executedQty:Math.min(r.approvedQty,Math.max(0,Number(ex[k]||0))),_key:k}});if(live){setRows(out);setExecuted(ex);setSaved(ex)}}catch(e){if(live)setError(e instanceof Error?e.message:'Unable to load BOQ')}finally{if(live)setLoading(false)}})();return()=>{live=false}},[]);
+ useEffect(()=>{let live=true;(async()=>{try{const raw=await loadWorkspaceBoqData(loadBoqData);let ex:Record<string,number>={};try{ex=JSON.parse(localStorage.getItem(KEY)||'{}')}catch{};const out:ViewRow[]=raw.map(r=>{const k=[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');return {...r,executedQty:Math.min(r.approvedQty,Math.max(0,Number(ex[k]||0))),_key:k}});if(live){setRows(out);setExecuted(ex);setSaved(ex)}}catch(e){if(live)setError(e instanceof Error?e.message:'Unable to load BOQ')}finally{if(live)setLoading(false)}})();return()=>{live=false}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const schemes=useMemo(()=>Array.from(new Set(rows.filter(r=>(lot==='All Lots'||r.lot===lot)&&(block==='All Blocks'||r.block===block)).map(r=>r.schemeName).filter(Boolean))).sort(),[rows,lot,block]);
