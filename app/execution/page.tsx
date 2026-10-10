@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-execution-v2';
@@ -25,6 +27,7 @@ export default function ExecutionPage(){
  const save=(r:BoqRow,s:string)=>{const next={...ex,[key(r)]:Math.min(r.approvedQty,Math.max(0,Number(s)||0))};setEx(next);localStorage.setItem(KEY,JSON.stringify(next))};
  if(loading)return <Shell><div className='content'><h1 className='title'>Execution</h1><p className='muted'>Loading approved BOQ and execution register…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Execution error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const pct=totals.approvedValue?totals.executedValue/totals.approvedValue*100:0;
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Execution Control</h1><p className='muted'>Record actual site execution against approved BOQ quantities. Execution shows how much work is physically completed; billing is controlled later through measurement and RA Bills.</p></div><Link className='btn secondary' href='/measurements'>Continue to Measurements</Link></div>
  <div className='grid grid4' style={{marginTop:18}}><div className='card'><div className='muted'>Approved value</div><div className='kpi'>{money(totals.approvedValue)}</div></div><div className='card'><div className='muted'>Executed value</div><div className='kpi'>{money(totals.executedValue)}</div></div><div className='card'><div className='muted'>Balance value</div><div className='kpi'>{money(totals.approvedValue-totals.executedValue)}</div></div><div className='card'><div className='muted'>Execution progress</div><div className='kpi'>{pct.toFixed(1)}%</div><div className='muted' style={{fontSize:12}}>Value-based portfolio progress</div></div></div>
