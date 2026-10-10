@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const EX='projectos-execution-v2',ME='projectos-measurements-v1',BILLS='projectos-ra-bills-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -12,7 +13,7 @@ type Bill={id:string;date:string;lot:string;scheme:string;number:string;status:'
 export default function BillsPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[ex,setEx]=useState<Record<string,number>>({}),[meas,setMeas]=useState<Record<string,number>>({}),[bills,setBills]=useState<Bill[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[scheme,setScheme]=useState('All Schemes'),[current,setCurrent]=useState<Record<string,number>>({});
- useEffect(()=>{try{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(EX)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(ME)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(BILLS)||'[]'))]).then(([r,e,m,b])=>{setRows(r);setEx(e);setMeas(m);setBills(b)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load RA data')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load RA data');setLoading(false)}},[]);
+ useEffect(()=>{try{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(EX)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(ME)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(BILLS)||'[]'))]).then(([r,e,m,b])=>{setRows(r);setEx(e);setMeas(m);setBills(b)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load RA data')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load RA data');setLoading(false)}},[]);
  const executed=(r:BoqRow)=>Math.min(r.approvedQty,Math.max(0,Number(ex[key(r)]||0)));
  const measured=(r:BoqRow)=>Math.min(executed(r),Math.max(0,Number(meas[key(r)]||0)));
  const previous=(r:BoqRow)=>Math.max(0,Number((bills.reduce((s,b)=>s,0),0))); // cumulative bill quantities are stored per draft below; item baseline remains independent
