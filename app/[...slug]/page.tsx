@@ -2,6 +2,8 @@
 import {use,useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 import {loadWorkspaceBoqData} from '@/lib/workspace';
 
@@ -32,6 +34,7 @@ export default function ModulePage({params}:{params:Promise<{slug?:string[]}>}){
  const title=titles[mod]||'ProjectOS',showTable=['execution','measurements','bills','purchases','expenses','payments'].includes(mod);
  if(loading)return <Shell><div className='content'><h1 className='title'>Loading ProjectOS BOQ…</h1><p className='muted'>Loading the complete Lot 3 and Lot 4 approved item register.</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>BOQ data error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const approved=data.reduce((s,r)=>s+val(r),0),exec=data.reduce((s,r)=>s+r.executedQty*(typeof r.rate==='number'?r.rate:0),0);
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>{title}</h1><p className='muted'>Master Project · Sant Kabir Nagar Rural Water Supply Project</p></div><Link className='btn' href='/dashboard'>Dashboard</Link></div>
  {mod==='dashboard'&&<><div className='grid grid4' style={{marginTop:18}}><Stat label='Approved BOQ Value' value={money(approved)}/><Stat label='Executed Value' value={money(exec)}/><Stat label='Approved BOQ Items' value={data.length.toLocaleString('en-IN')}/><Stat label='Schemes' value={String(new Set(data.map(r=>r.schemeName)).size)}/></div><div className='grid grid3' style={{marginTop:16}}>{lotRows.map(x=><Stat key={x.lot} label={x.lot+' Approved'} value={money(x.value)} sub={x.schemes+' schemes · '+x.items+' items'}/>)}</div><div className='card' style={{marginTop:16}}><h3>Lot-wise progress</h3>{lotRows.map(x=><div key={x.lot} style={{marginTop:14}}><div style={{display:'flex',justifyContent:'space-between'}}><b>{x.lot}</b><span>{x.value?((x.executed/x.value)*100).toFixed(1):'0'}%</span></div><div style={{height:10,background:'#e5e7eb',borderRadius:99,marginTop:6}}><div style={{height:'100%',width:(x.value?Math.min(100,x.executed/x.value*100):0)+'%',background:'#2563eb',borderRadius:99}}/></div></div>)}</div></>}
