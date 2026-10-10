@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-execution-v2';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -11,7 +12,7 @@ const amount=(r:BoqRow,q:number)=>effectiveRate(r)*q;
 export default function ExecutionPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[ex,setEx]=useState<Record<string,number>>({}),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[scheme,setScheme]=useState('All Schemes'),[search,setSearch]=useState('');
- useEffect(()=>{Promise.all([loadBoqData(),Promise.resolve(typeof window==='undefined'?{}:JSON.parse(localStorage.getItem(KEY)||'{}'))]).then(([r,e])=>{setRows(r);setEx(e)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load execution data')).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(typeof window==='undefined'?{}:JSON.parse(localStorage.getItem(KEY)||'{}'))]).then(([r,e])=>{setRows(r);setEx(e)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load execution data')).finally(()=>setLoading(false))},[]);
  const key=(r:BoqRow)=>[r.lot,r.schemeId||'',r.schemeName,r.itemCode,r.itemDescription].join('|');
  const executed=(r:BoqRow)=>Math.min(r.approvedQty,Math.max(0,Number(ex[key(r)]||0)));
  const executionPct=(r:BoqRow)=>r.approvedQty?executed(r)/r.approvedQty*100:0;
