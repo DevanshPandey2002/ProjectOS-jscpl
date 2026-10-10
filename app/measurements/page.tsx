@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const EX='projectos-execution-v2',ME='projectos-measurements-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const qty=(n:number)=>n.toLocaleString('en-IN',{maximumFractionDigits:3});
@@ -12,7 +13,7 @@ const pct=(a:number,b:number)=>b?Math.min(100,Math.max(0,a/b*100)):0;
 export default function MeasurementsPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[ex,setEx]=useState<Record<string,number>>({}),[meas,setMeas]=useState<Record<string,number>>({}),[payPct,setPayPct]=useState<Record<string,number>>({}),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[block,setBlock]=useState('All Blocks'),[scheme,setScheme]=useState('All Schemes'),[q,setQ]=useState('');
- useEffect(()=>{try{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(EX)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(ME)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem('projectos-measurement-payment-v1')||'{}'))]).then(([r,e,m,p])=>{setRows(r);setEx(e);setMeas(m);setPayPct(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load data')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load data');setLoading(false)}},[]);
+ useEffect(()=>{try{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(EX)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem(ME)||'{}')),Promise.resolve(JSON.parse(localStorage.getItem('projectos-measurement-payment-v1')||'{}'))]).then(([r,e,m,p])=>{setRows(r);setEx(e);setMeas(m);setPayPct(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load data')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load data');setLoading(false)}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const blocks=useMemo(()=>Array.from(new Set(rows.filter(r=>lot==='All Lots'||r.lot===lot).map(r=>r.block).filter(Boolean))).sort(),[rows,lot]);
  const schemes=useMemo(()=>Array.from(new Set(rows.filter(r=>(lot==='All Lots'||r.lot===lot)&&(block==='All Blocks'||r.block===block)).map(r=>r.schemeName))).sort(),[rows,lot,block]);
