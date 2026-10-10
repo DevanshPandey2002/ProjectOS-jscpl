@@ -1,11 +1,17 @@
 'use client';
+import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
 const snapshot={schemes:84,itemRows:36984,pendingValue:822952178.33};
 
 export default function PendingApproval(){
+ const [project,setProject]=useState('All Projects');
+ useEffect(()=>{setProject(readWorkspace().project)},[]);
+ if(project!=='All Projects'&&project!=='Sant Kabir Nagar')return <NoProjectData project={project}/>;
  return <Shell><div className='content'>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
    <div><h1 className='title'>Pending Approval</h1><p className='muted'>Master BOQ reconciliation against Lot 3 and Lot 4 approved quantities.</p></div>
