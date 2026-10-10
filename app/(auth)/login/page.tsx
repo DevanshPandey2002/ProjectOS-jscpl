@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const stored = JSON.parse(window.localStorage.getItem(PROJECTS_KEY) || '[]');
       if (Array.isArray(stored)) {
-        const list = Array.from(new Set([...DEFAULT_PROJECTS, ...stored.filter((x): x is string => typeof x === 'string' && x.trim()).map((x: string) => x.trim())]));
+        const list = Array.from(new Set([...DEFAULT_PROJECTS, ...stored.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((x: string) => x.trim())]));
         setProjects(list);
         if (!list.includes(project)) setProject(list[0]);
       }
