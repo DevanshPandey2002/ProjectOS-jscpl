@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
+import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-payments-v1';
 const BILL_KEY='projectos-ra-bills-v1';
 const money=(n:number)=>'₹'+Math.round(n).toLocaleString('en-IN');
@@ -12,7 +13,7 @@ export default function PaymentsPage(){
  const [rows,setRows]=useState<BoqRow[]>([]),[bills,setBills]=useState<Bill[]>([]),[payments,setPayments]=useState<Payment[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lot,setLot]=useState('All Lots'),[q,setQ]=useState('');
  const [form,setForm]=useState({billId:'',payee:'',amount:'',mode:'Bank Transfer',reference:'',status:'Paid' as Payment['status']});
- useEffect(()=>{try{Promise.all([loadBoqData(),Promise.resolve(JSON.parse(localStorage.getItem(BILL_KEY)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,b,p])=>{setRows(r);setBills(b);setPayments(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load payments')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load payments');setLoading(false)}},[]);
+ useEffect(()=>{try{Promise.all([loadWorkspaceBoqData(loadBoqData),Promise.resolve(JSON.parse(localStorage.getItem(BILL_KEY)||'[]')),Promise.resolve(JSON.parse(localStorage.getItem(KEY)||'[]'))]).then(([r,b,p])=>{setRows(r);setBills(b);setPayments(p)}).catch(e=>setError(e instanceof Error?e.message:'Unable to load payments')).finally(()=>setLoading(false))}catch(e){setError(e instanceof Error?e.message:'Unable to load payments');setLoading(false)}},[]);
  const lots=useMemo(()=>Array.from(new Set(rows.map(r=>r.lot))).sort(),[rows]);
  const filteredBills=useMemo(()=>bills.filter(b=>(lot==='All Lots'||b.lot===lot)&&(!q||`${b.scheme} ${b.id}`.toLowerCase().includes(q.toLowerCase()))),[bills,lot,q]);
  const totalBilled=useMemo(()=>bills.reduce((s,b)=>s+Number(b.grandTotal||0),0),[bills]);
