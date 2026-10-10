@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_PROJECTS, PROJECTS_KEY, WORKSPACE_ROLES, writeWorkspace, type WorkspaceRole } from '@/lib/workspace';
 
@@ -13,7 +13,7 @@ export default function Login() {
   const [showAddProject, setShowAddProject] = useState(false);
   const [notice, setNotice] = useState('');
 
-  useMemo(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const stored = JSON.parse(window.localStorage.getItem(PROJECTS_KEY) || '[]');
