@@ -2,6 +2,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
+import NoProjectData from '@/components/NoProjectData';
+import {readWorkspace} from '@/lib/workspace';
 import {loadBoqData,type BoqRow} from '@/lib/boqData';
 import {loadWorkspaceBoqData} from '@/lib/workspace';
 const KEY='projectos-expenses-v1';
@@ -23,6 +25,7 @@ export default function ExpensesPage(){
  const add=()=>{const r=rows.find(x=>k(x)===form.row);if(!r||!form.vendor)return;const base=Math.max(0,Number(form.qty)||0)*Math.max(0,Number(form.rate)||0),tax=base*Math.max(0,Number(form.tax)||0)/100;const e:Expense={id:crypto.randomUUID(),date:new Date().toISOString().slice(0,10),lot:r.lot,block:r.block,scheme:r.schemeName,item:k(r),category:form.category,vendor:form.vendor,invoice:form.invoice,qty:Number(form.qty)||0,rate:Number(form.rate)||0,tax,amount:base,status:form.status};const next=[e,...expenses];setExpenses(next);localStorage.setItem(KEY,JSON.stringify(next));setForm({row:'',category:'Material',vendor:'',invoice:'',qty:'',rate:'',tax:'0',status:'Unpaid'})};
  if(loading)return <Shell><div className='content'><h1 className='title'>Expenses</h1><p className='muted'>Loading project cost register…</p></div></Shell>;
  if(error)return <Shell><div className='content'><h1 className='title'>Expenses error</h1><div className='card'>{error}</div></div></Shell>;
+ if(!rows.length)return <NoProjectData project={readWorkspace().project}/>;
  const selection=expenses.filter(e=>(lot==='All Lots'||e.lot===lot)&&(block==='All Blocks'||e.block===block));
  const selectionTotal=selection.reduce((s,e)=>s+e.amount+e.tax,0);
  return <Shell><div className='content'><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><h1 className='title'>Expenses & Cost Control</h1><p className='muted'>Capture actual project cost against Lot → Block → Scheme → Item for profitability and variance analysis.</p></div><Link className='btn secondary' href='/finance'>Project Finance</Link></div>
